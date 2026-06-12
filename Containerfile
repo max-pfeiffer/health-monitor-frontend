@@ -1,8 +1,14 @@
 FROM node:24-alpine AS build
 WORKDIR /app
-RUN corepack enable && corepack prepare pnpm@latest --activate
-COPY package.json pnpm-lock.yaml ./
+
+# Activate corepack — uses packageManager field in package.json for pnpm version
+RUN corepack enable
+
+# Install dependencies (layer cached until lockfile or workspace config changes)
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
+
+# Build application
 COPY . .
 RUN pnpm run build
 
