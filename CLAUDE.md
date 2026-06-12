@@ -100,7 +100,7 @@ No Kubernetes manifest are included in this project.
 ## Backend API
 
 - OpenAPI specs:
-  - https://github.com/max-pfeiffer/health-monitor-backend/blob/main/api_docs/health-monitor-backend_0.6.1_api_v1.yaml
+  - https://github.com/max-pfeiffer/health-monitor-backend/blob/main/api_docs/health-monitor-backend_0.5.0_api_v1.yaml
   - main branch
 
 ### Vuetify theme
@@ -132,15 +132,20 @@ No Kubernetes manifest are included in this project.
 ### Tests
 
 #### Unit tests
+
 Coverage:
- - Pinia stores and composables
+
+- Pinia stores and composables
 
 #### E2E tests
+
 Coverage:
+
 - main metric CRUD flows
 - e2e test login flow setup: mock/stub the auth layer in tests
 
 #### Local manual testing
+
 - Podman compose is used for local manual testing
 - Configuration: compose.yaml (starts Keycloak, PostgreSQL, runs migrations for health-monitor-backend app,
   starts the health-monitor-backend app on port 8000, starts the health-monitor-frontend app)

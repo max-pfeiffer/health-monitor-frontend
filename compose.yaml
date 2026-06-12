@@ -50,6 +50,7 @@ services:
       DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgresql:5432/health_monitor
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: health-monitor
+      CORS_ALLOWED_ORIGINS: "http://localhost:8081,http://localhost:5173"
     command: health-monitor-backend
     ports:
       - "8000:8000"
