@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useOnlineStatus } from '@/composables/useOnlineStatus'
 
 const drawer = ref(true)
 const authStore = useAuthStore()
+const { isOnline } = useOnlineStatus()
 
 const navItems = [
   { title: 'Blood Pressure', to: '/blood-pressure', icon: 'mdi-heart-pulse' },
@@ -40,5 +42,10 @@ const navItems = [
         <router-view />
       </v-container>
     </v-main>
+
+    <v-snackbar :model-value="!isOnline" :timeout="-1" color="warning" location="top">
+      <v-icon icon="mdi-wifi-off" class="mr-2" />
+      You are offline. Showing cached data — changes cannot be saved.
+    </v-snackbar>
   </v-app>
 </template>
