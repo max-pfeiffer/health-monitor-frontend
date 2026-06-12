@@ -1,0 +1,12 @@
+.git/
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+dev-dist/
+.husky/
+e2e/
+*.md
+.env*
+!.env.example
