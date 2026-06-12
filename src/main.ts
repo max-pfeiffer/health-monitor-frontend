@@ -5,6 +5,8 @@ import { VueQueryPlugin, QueryClient } from '@tanstack/vue-query'
 import App from './App.vue'
 import router from './router'
 import vuetify from './plugins/vuetify'
+import { initKeycloakInstance } from './lib/keycloak'
+import { useAuthStore } from './stores/auth'
 
 const keycloak = new Keycloak({
   url: import.meta.env.VITE_KEYCLOAK_URL,
@@ -29,13 +31,16 @@ keycloak
       return
     }
 
+    const pinia = createPinia()
     const app = createApp(App)
 
-    app.use(createPinia())
+    app.use(pinia)
     app.use(router)
     app.use(vuetify)
     app.use(VueQueryPlugin, { queryClient })
-    app.provide('keycloak', keycloak)
+
+    initKeycloakInstance(keycloak)
+    useAuthStore(pinia).init(keycloak)
 
     app.mount('#app')
 
