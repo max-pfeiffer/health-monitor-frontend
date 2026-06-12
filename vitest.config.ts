@@ -8,6 +8,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
+    include: ['src/**/*.spec.ts'],
     server: {
       deps: {
         inline: ['vuetify'],

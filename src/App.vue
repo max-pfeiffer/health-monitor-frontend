@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 
 const drawer = ref(true)
+const authStore = useAuthStore()
 
 const navItems = [
   { title: 'Blood Pressure', to: '/blood-pressure', icon: 'mdi-heart-pulse' },
@@ -27,6 +29,10 @@ const navItems = [
     <v-app-bar>
       <v-app-bar-nav-icon @click="drawer = !drawer" />
       <v-app-bar-title>Health Monitor</v-app-bar-title>
+      <template #append>
+        <span v-if="authStore.username" class="text-body-2 mr-2">{{ authStore.username }}</span>
+        <v-btn icon="mdi-logout" @click="authStore.logout()" />
+      </template>
     </v-app-bar>
 
     <v-main>
