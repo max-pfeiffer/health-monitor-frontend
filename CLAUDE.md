@@ -131,11 +131,20 @@ No Kubernetes manifest are included in this project.
 
 ### Tests
 
-- unit tests coverage:
-  - Pinia stores and composables
-- e2e tests coverage:
-  - main metric CRUD flows
+#### Unit tests
+Coverage:
+ - Pinia stores and composables
+
+#### E2E tests
+Coverage:
+- main metric CRUD flows
 - e2e test login flow setup: mock/stub the auth layer in tests
+
+#### Local manual testing
+- Podman compose is used for local manual testing
+- Configuration: compose.yaml (starts Keycloak, PostgreSQL, runs migrations for health-monitor-backend app,
+  starts the health-monitor-backend app on port 8000, starts the health-monitor-frontend app)
+- Keycloak is preloaded from `compose/keycloak/realm.json` with realm `health-monitor`, client `health-monitor-frontend`
 
 ## Stack
 
@@ -168,3 +177,62 @@ No Kubernetes manifest are included in this project.
 - VITE_KEYCLOAK_URL — Keycloak server URL
 - VITE_KEYCLOAK_REALM — Keycloak realm name
 - VITE_KEYCLOAK_CLIENT_ID — Keycloak client ID
+
+## Development Conventions
+
+### Branching
+
+- `main` is protected — never commit directly.
+- Feature work: `feature/<short-kebab-name>`
+- Bug fixes: `bugfix/<short-kebab-name>`
+- Open a pull request against `main`; CI (lint + unit tests) must pass before merge.
+
+### Commit messages
+
+- Follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification.
+- Common types used in this repo: `feat`, `fix`, `chore`, `refactor`, `docs`, `test`, `ci`.
+- Use a scope when it clarifies the area touched, e.g. `feat(glucose): …`, `fix(pwa): …`.
+- Subject line in imperative mood, no trailing period, ≤ 72 chars.
+
+### Code style
+
+- TypeScript **strict mode** — no `any` unless justified with a comment; prefer `unknown` + narrowing.
+- ESLint + Prettier are the source of truth for style. Do not hand-format; run `pnpm run lint` / `pnpm run format`.
+- Vue Single-File Components use `<script setup lang="ts">` with the Composition API. No Options API.
+- Prefer composables (`src/composables/`) over mixins or ad-hoc helpers for shared reactive logic.
+- Pinia stores live in `src/stores/`, one store per domain concept; expose state via `storeToRefs`.
+- Routes are declared in `src/router/`; pages live in `src/pages/`.
+- HTTP access goes through the shared `ofetch` client in `src/lib/` so Bearer-token injection is consistent.
+- Server state (queries, mutations, cache invalidation) is owned by **TanStack Query** — do not duplicate it in Pinia.
+
+### Pre-commit hooks
+
+- Husky runs `lint-staged` on every commit:
+  - `src/**/*.{vue,ts}` → `eslint --fix` then `prettier --write`
+  - `*.{js,css,json,md}` → `prettier --write`
+- Do **not** bypass hooks (`--no-verify`) — if a hook fails, fix the underlying issue.
+
+### Testing conventions
+
+- Unit tests (`*.spec.ts`) live next to the code they cover (or under `__tests__/`) and target Pinia stores and composables.
+- E2E tests live in `e2e/` and cover the main metric CRUD flows; the auth layer is mocked/stubbed.
+- New features should ship with at least one unit test for any new store/composable logic and an e2e test if a user-visible flow changes.
+- Run `pnpm run test:unit` and `pnpm run test:e2e` locally before opening a PR.
+
+### Dependency management
+
+- Use **pnpm** exclusively — never commit a `package-lock.json` or `yarn.lock`.
+- Native-build allowlists live in `pnpm-workspace.yaml` under `allowBuilds` (pnpm 11+), not in `package.json#pnpm`.
+- Pin to the major version of each dependency in `package.json`; let pnpm resolve minors/patches via the lockfile.
+
+### Environment & secrets
+
+- Never commit a real `.env` — only `.env.example` with placeholder values.
+- All client-exposed config must be prefixed `VITE_` (Vite only inlines those at build time).
+- Do not hard-code backend or Keycloak URLs anywhere in `src/`.
+
+### PR workflow
+
+- Keep PRs focused: one feature or fix per PR.
+- Update `CLAUDE.md` and/or `README.md` in the same PR if behaviour or developer workflow changes.
+- Squash-merge into `main`; the squash commit message must itself follow Conventional Commits.
