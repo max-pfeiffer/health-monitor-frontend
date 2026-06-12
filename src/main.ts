@@ -49,6 +49,17 @@ keycloak
     }, 60_000)
   })
   .catch(() => {
-    document.body.innerHTML =
-      '<p style="padding:2rem;font-family:sans-serif">Unable to connect to authentication server. Please check your connection and reload.</p>'
+    const isOffline = !navigator.onLine
+    const heading = isOffline ? 'You are offline' : 'Authentication unavailable'
+    const body = isOffline
+      ? 'Please reconnect to the internet and reload the page.'
+      : 'Unable to reach the authentication server. Please try again later.'
+
+    document.body.style.cssText =
+      'margin:0;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh'
+    document.body.innerHTML = `
+      <div style="max-width:360px;padding:2rem;text-align:center">
+        <h1 style="font-size:1.25rem;font-weight:600;margin:0 0 .75rem;color:#333">${heading}</h1>
+        <p style="margin:0;color:#666;line-height:1.5">${body}</p>
+      </div>`
   })
