@@ -1,0 +1,40 @@
+name: Container
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - "README.md"
+      - "CLAUDE.md"
+
+jobs:
+  build:
+    name: Build container image
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build image
+        run: |
+          docker build \
+            --build-arg VITE_API_BASE_URL=http://localhost:8000 \
+            --build-arg VITE_KEYCLOAK_URL=http://localhost:8080 \
+            --build-arg VITE_KEYCLOAK_REALM=health-monitor \
+            --build-arg VITE_KEYCLOAK_CLIENT_ID=health-monitor-frontend \
+            -f Containerfile \
+            -t health-monitor-frontend:ci \
+            .
+
+      - name: Smoke-test image
+        run: |
+          docker run -d --rm --name hmf -p 8081:80 health-monitor-frontend:ci
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8081/ > /tmp/index.html; then
+              break
+            fi
+            sleep 1
+          done
+          docker stop hmf
+          grep -qi 'health' /tmp/index.html || (echo "index.html did not contain expected content" && cat /tmp/index.html && exit 1)

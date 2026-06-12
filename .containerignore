@@ -1,4 +1,7 @@
 .git/
+.github/
+compose/
+compose.yaml
 node_modules/
 dist/
 coverage/
