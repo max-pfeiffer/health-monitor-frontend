@@ -14,4 +14,9 @@ export default defineConfigWithVueTs(
   pluginVue.configs['flat/essential'],
   vueTsConfigs.recommended,
   skipFormatting,
+  {
+    rules: {
+      'vue/valid-v-slot': ['error', { allowModifiers: true }],
+    },
+  },
 )
