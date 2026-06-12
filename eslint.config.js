@@ -16,6 +16,7 @@ export default defineConfigWithVueTs(
   skipFormatting,
   {
     rules: {
+      // Vuetify uses #item.xxx slot syntax which ESLint treats as a modifier
       'vue/valid-v-slot': ['error', { allowModifiers: true }],
     },
   },
