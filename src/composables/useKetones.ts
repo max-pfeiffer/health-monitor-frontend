@@ -36,3 +36,15 @@ export function useDeleteKetones() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
   })
 }
+
+export function useImportKetones() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (file: File) => {
+      const body = new FormData()
+      body.append('file', file)
+      return api('/api/v1/ketones/import', { method: 'POST', body })
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
+  })
+}

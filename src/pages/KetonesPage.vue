@@ -3,6 +3,7 @@ import { computed, reactive, ref } from 'vue'
 import {
   useCreateKetones,
   useDeleteKetones,
+  useImportKetones,
   useKetonesList,
   useUpdateKetones,
 } from '@/composables/useKetones'
@@ -15,6 +16,7 @@ const { data: records, isLoading, isError } = useKetonesList()
 const createMutation = useCreateKetones()
 const updateMutation = useUpdateKetones()
 const deleteMutation = useDeleteKetones()
+const importMutation = useImportKetones()
 
 const dialog = ref(false)
 const deleteDialog = ref(false)
@@ -22,6 +24,8 @@ const editingId = ref<number | null>(null)
 const deletingId = ref<number | null>(null)
 const snackbar = ref(false)
 const snackbarText = ref('')
+const snackbarColor = ref<'error' | 'success'>('error')
+const fileInput = ref<HTMLInputElement | null>(null)
 
 interface FormState {
   value: number | null
@@ -58,8 +62,32 @@ function toDatetimeLocal(iso: string): string {
 }
 
 function showError(message: string) {
+  snackbarColor.value = 'error'
   snackbarText.value = message
   snackbar.value = true
+}
+
+function showSuccess(message: string) {
+  snackbarColor.value = 'success'
+  snackbarText.value = message
+  snackbar.value = true
+}
+
+function openImport() {
+  fileInput.value?.click()
+}
+
+async function onFileSelected(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+  try {
+    await importMutation.mutateAsync(file)
+    showSuccess('File imported successfully.')
+  } catch {
+    showError('Failed to import file. Please check the file and your connection.')
+  }
 }
 
 function openCreate() {
@@ -114,10 +142,25 @@ async function deleteRecord() {
 
 <template>
   <div>
-    <div class="d-flex align-center mb-4">
+    <div class="d-flex align-center mb-4 ga-2">
       <h1 class="text-h4">Ketones</h1>
       <v-spacer />
       <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">Add</v-btn>
+      <v-btn
+        color="primary"
+        variant="tonal"
+        prepend-icon="mdi-upload"
+        :loading="importMutation.isPending.value"
+        @click="openImport"
+        >Upload</v-btn
+      >
+      <input
+        ref="fileInput"
+        type="file"
+        accept="application/json,.json"
+        class="d-none"
+        @change="onFileSelected"
+      />
     </div>
 
     <v-alert v-if="isError" type="error" class="mb-4" variant="tonal">
@@ -227,7 +270,7 @@ async function deleteRecord() {
       </v-card>
     </v-dialog>
 
-    <v-snackbar v-model="snackbar" color="error" :timeout="4000">
+    <v-snackbar v-model="snackbar" :color="snackbarColor" :timeout="4000">
       {{ snackbarText }}
     </v-snackbar>
   </div>
