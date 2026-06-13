@@ -11,6 +11,7 @@ import {
   useBloodGlucoseList,
   useCreateBloodGlucose,
   useDeleteBloodGlucose,
+  useImportBloodGlucose,
   useUpdateBloodGlucose,
 } from '../useBloodGlucose'
 
@@ -84,5 +85,24 @@ describe('useDeleteBloodGlucose', () => {
     const { result } = createTestWrapper(() => useDeleteBloodGlucose())
     await result.mutateAsync(7)
     expect(mockApi).toHaveBeenCalledWith('/api/v1/blood-glucose/7', { method: 'DELETE' })
+  })
+})
+
+describe('useImportBloodGlucose', () => {
+  beforeEach(() => {
+    mockApi.mockClear()
+    mockApi.mockResolvedValue(undefined)
+  })
+
+  it('posts a multipart form with the file to /api/v1/blood-glucose/import', async () => {
+    const { result } = createTestWrapper(() => useImportBloodGlucose())
+    const file = new File(['[]'], 'records.json', { type: 'application/json' })
+    await result.mutateAsync(file)
+    expect(mockApi).toHaveBeenCalledTimes(1)
+    const [url, opts] = mockApi.mock.calls[0]
+    expect(url).toBe('/api/v1/blood-glucose/import')
+    expect(opts).toMatchObject({ method: 'POST' })
+    expect(opts?.body).toBeInstanceOf(FormData)
+    expect((opts?.body as FormData).get('file')).toBe(file)
   })
 })

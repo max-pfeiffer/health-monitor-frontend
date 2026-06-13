@@ -11,6 +11,7 @@ import {
   useBloodPressureList,
   useCreateBloodPressure,
   useDeleteBloodPressure,
+  useImportBloodPressure,
   useUpdateBloodPressure,
 } from '../useBloodPressure'
 
@@ -86,5 +87,24 @@ describe('useDeleteBloodPressure', () => {
     const { result } = createTestWrapper(() => useDeleteBloodPressure())
     await result.mutateAsync(42)
     expect(mockApi).toHaveBeenCalledWith('/api/v1/blood-pressure/42', { method: 'DELETE' })
+  })
+})
+
+describe('useImportBloodPressure', () => {
+  beforeEach(() => {
+    mockApi.mockClear()
+    mockApi.mockResolvedValue(undefined)
+  })
+
+  it('posts a multipart form with the file to /api/v1/blood-pressure/import', async () => {
+    const { result } = createTestWrapper(() => useImportBloodPressure())
+    const file = new File(['[]'], 'records.json', { type: 'application/json' })
+    await result.mutateAsync(file)
+    expect(mockApi).toHaveBeenCalledTimes(1)
+    const [url, opts] = mockApi.mock.calls[0]
+    expect(url).toBe('/api/v1/blood-pressure/import')
+    expect(opts).toMatchObject({ method: 'POST' })
+    expect(opts?.body).toBeInstanceOf(FormData)
+    expect((opts?.body as FormData).get('file')).toBe(file)
   })
 })

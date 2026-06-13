@@ -19,6 +19,7 @@ With this application the user should capture and store the following health met
 
 The user can list the stored metrics and edit them.
 The user can set all parameters for watching diagrams for each metric.
+The user can upload files with metric data in JSON format.
 
 ### Key Consumers
 
