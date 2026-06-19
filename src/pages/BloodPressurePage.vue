@@ -7,8 +7,6 @@ import {
   useImportBloodPressure,
   useUpdateBloodPressure,
 } from '@/composables/useBloodPressure'
-import { useBloodPressureChart } from '@/composables/useCharts'
-import type { BloodPressureChartParams } from '@/composables/useCharts'
 import type { BloodPressureRead } from '@/types/api'
 
 const { data: records, isLoading, isError } = useBloodPressureList()
@@ -55,23 +53,6 @@ const headers = [
   { title: 'Notes', key: 'notes', sortable: false },
   { title: '', key: 'actions', sortable: false, align: 'end' as const },
 ]
-
-// Chart
-const chartParams = ref<BloodPressureChartParams>({
-  start: null,
-  end: null,
-  systolic_top: 135,
-  diastolic_top: 85,
-  show_systolic: true,
-  show_diastolic: true,
-  show_pulse: true,
-})
-
-const {
-  data: chartSvg,
-  isLoading: chartLoading,
-  isError: chartError,
-} = useBloodPressureChart(chartParams)
 
 function formatDatetime(iso: string): string {
   return new Date(iso).toLocaleString()
@@ -171,6 +152,7 @@ async function deleteRecord() {
     <div class="d-flex align-center mb-4 ga-2">
       <h1 class="text-h4">Blood Pressure</h1>
       <v-spacer />
+      <v-btn variant="text" prepend-icon="mdi-chart-line" to="/blood-pressure/chart">Chart</v-btn>
       <v-btn color="primary" prepend-icon="mdi-plus" @click="openCreate">Add</v-btn>
       <v-btn
         color="primary"
@@ -219,72 +201,6 @@ async function deleteRecord() {
         />
       </template>
     </v-data-table>
-
-    <!-- Chart -->
-    <v-card class="mt-6">
-      <v-card-title class="text-h6">Chart</v-card-title>
-      <v-card-text>
-        <v-row>
-          <v-col cols="12" sm="6">
-            <v-text-field
-              v-model="chartParams.start"
-              label="From"
-              type="date"
-              clearable
-              hide-details
-            />
-          </v-col>
-          <v-col cols="12" sm="6">
-            <v-text-field v-model="chartParams.end" label="To" type="date" clearable hide-details />
-          </v-col>
-          <v-col cols="6" sm="3">
-            <v-text-field
-              v-model.number="chartParams.systolic_top"
-              label="Systolic limit"
-              type="number"
-              hide-details
-            />
-          </v-col>
-          <v-col cols="6" sm="3">
-            <v-text-field
-              v-model.number="chartParams.diastolic_top"
-              label="Diastolic limit"
-              type="number"
-              hide-details
-            />
-          </v-col>
-          <v-col cols="4" sm="2">
-            <v-switch
-              v-model="chartParams.show_systolic"
-              label="Systolic"
-              color="primary"
-              hide-details
-            />
-          </v-col>
-          <v-col cols="4" sm="2">
-            <v-switch
-              v-model="chartParams.show_diastolic"
-              label="Diastolic"
-              color="primary"
-              hide-details
-            />
-          </v-col>
-          <v-col cols="4" sm="2">
-            <v-switch v-model="chartParams.show_pulse" label="Pulse" color="primary" hide-details />
-          </v-col>
-        </v-row>
-
-        <div v-if="chartLoading" class="d-flex justify-center pa-8">
-          <v-progress-circular indeterminate color="primary" />
-        </div>
-        <v-alert v-else-if="chartError" type="error" variant="tonal" class="mt-4">
-          Failed to load chart. Check your connection.
-        </v-alert>
-        <!-- SVG from authenticated backend is safe to render directly -->
-        <div v-else-if="chartSvg" class="overflow-x-auto mt-4" v-html="chartSvg" />
-        <p v-else class="text-medium-emphasis text-center pa-8">No chart data yet.</p>
-      </v-card-text>
-    </v-card>
 
     <!-- Create / Edit dialog -->
     <v-dialog v-model="dialog" max-width="480">

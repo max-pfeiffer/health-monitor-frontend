@@ -7,10 +7,10 @@ const drawer = ref(true)
 const authStore = useAuthStore()
 const { isOnline } = useOnlineStatus()
 
-const navItems = [
-  { title: 'Blood Pressure', to: '/blood-pressure', icon: 'mdi-heart-pulse' },
-  { title: 'Blood Glucose', to: '/blood-glucose', icon: 'mdi-water' },
-  { title: 'Ketones', to: '/ketones', icon: 'mdi-flask' },
+const navGroups = [
+  { title: 'Blood Pressure', base: '/blood-pressure', icon: 'mdi-heart-pulse' },
+  { title: 'Blood Glucose', base: '/blood-glucose', icon: 'mdi-water' },
+  { title: 'Ketones', base: '/ketones', icon: 'mdi-flask' },
 ]
 </script>
 
@@ -18,13 +18,13 @@ const navItems = [
   <v-app>
     <v-navigation-drawer v-model="drawer">
       <v-list nav density="compact">
-        <v-list-item
-          v-for="item in navItems"
-          :key="item.to"
-          :to="item.to"
-          :prepend-icon="item.icon"
-          :title="item.title"
-        />
+        <v-list-group v-for="group in navGroups" :key="group.base" :value="group.base">
+          <template #activator="{ props }">
+            <v-list-item v-bind="props" :prepend-icon="group.icon" :title="group.title" />
+          </template>
+          <v-list-item :to="group.base" prepend-icon="mdi-table" title="Records" />
+          <v-list-item :to="`${group.base}/chart`" prepend-icon="mdi-chart-line" title="Chart" />
+        </v-list-group>
       </v-list>
     </v-navigation-drawer>
 
