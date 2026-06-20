@@ -101,7 +101,7 @@ No Kubernetes manifest are included in this project.
 ## Backend API
 
 - OpenAPI specs:
-  - https://github.com/max-pfeiffer/health-monitor-backend/blob/main/api_docs/health-monitor-backend_0.5.0_api_v1.yaml
+  - https://github.com/max-pfeiffer/health-monitor-backend/blob/main/api_docs/health-monitor-backend_0.9.1_api_v1.yaml
   - main branch
 
 ### Vuetify theme
