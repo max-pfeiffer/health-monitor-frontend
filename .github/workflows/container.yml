@@ -16,25 +16,51 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Build image
+      # Register QEMU binfmt handlers so Podman can build/run the arm64 image
+      # on the amd64 runner via emulation.
+      - name: Set up QEMU for cross-architecture builds
+        uses: docker/setup-qemu-action@v4
+        with:
+          platforms: arm64
+
+      - name: Build multi-architecture image
         run: |
-          docker build \
+          podman build \
+            --platform linux/amd64,linux/arm64 \
+            --manifest health-monitor-frontend:ci \
             --build-arg VITE_API_BASE_URL=http://localhost:8000 \
             --build-arg VITE_KEYCLOAK_URL=http://localhost:8080 \
             --build-arg VITE_KEYCLOAK_REALM=health-monitor \
             --build-arg VITE_KEYCLOAK_CLIENT_ID=health-monitor-frontend \
             -f Containerfile \
-            -t health-monitor-frontend:ci \
             .
 
-      - name: Smoke-test image
+      - name: Verify manifest contains both architectures
         run: |
-          docker run -d --rm --name hmf -p 8081:80 health-monitor-frontend:ci
-          for i in $(seq 1 30); do
-            if curl -fsS http://localhost:8081/ > /tmp/index.html; then
-              break
-            fi
-            sleep 1
+          podman manifest inspect health-monitor-frontend:ci
+          for arch in amd64 arm64; do
+            podman manifest inspect health-monitor-frontend:ci \
+              | jq -e --arg arch "$arch" \
+                  '.manifests[] | select(.platform.architecture == $arch)' > /dev/null \
+              || { echo "manifest is missing architecture: $arch"; exit 1; }
           done
-          docker stop hmf
-          grep -qi 'health' /tmp/index.html || (echo "index.html did not contain expected content" && cat /tmp/index.html && exit 1)
+
+      - name: Smoke-test each architecture
+        run: |
+          for arch in amd64 arm64; do
+            echo "=== smoke-testing linux/$arch ==="
+            podman run -d --rm --name "hmf-$arch" --arch "$arch" \
+              -p 8081:80 health-monitor-frontend:ci
+            ready=
+            for i in $(seq 1 30); do
+              if curl -fsS http://localhost:8081/ > /tmp/index.html; then
+                ready=1
+                break
+              fi
+              sleep 1
+            done
+            podman stop "hmf-$arch"
+            [ -n "$ready" ] || { echo "container for $arch did not become ready"; exit 1; }
+            grep -qi 'health' /tmp/index.html \
+              || { echo "index.html did not contain expected content"; cat /tmp/index.html; exit 1; }
+          done
