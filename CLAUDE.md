@@ -101,7 +101,7 @@ No Kubernetes manifest are included in this project.
 ## Backend API
 
 - OpenAPI specs:
-  - https://github.com/max-pfeiffer/health-monitor-backend/blob/main/api_docs/health-monitor-backend_0.5.0_api_v1.yaml
+  - https://github.com/max-pfeiffer/health-monitor-backend/blob/main/api_docs/health-monitor-backend_0.9.1_api_v1.yaml
   - main branch
 
 ### Vuetify theme
@@ -128,6 +128,7 @@ No Kubernetes manifest are included in this project.
 - Building and running the container is tested
 - Use multiple stages in the Containerfile to optimize image size
 - The image is published on DockerHub: https://hub.docker.com/
+- Image architectures: linux/amd64, linux/arm64
 - nginx: add try_files $uri $uri/ /index.html for Vue Router to work in history mode
 
 ### Tests

@@ -46,6 +46,7 @@ describe('useBloodPressureChart', () => {
       show_systolic: true,
       show_diastolic: true,
       show_pulse: true,
+      theme: 'light',
     })
     createTestWrapper(() => useBloodPressureChart(params))
     expect(mockApi).toHaveBeenCalledWith('/api/v1/blood-pressure/chart', {
@@ -55,9 +56,25 @@ describe('useBloodPressureChart', () => {
         show_systolic: true,
         show_diastolic: true,
         show_pulse: true,
+        theme: 'light',
       },
       responseType: 'text',
     })
+  })
+
+  it('forwards the dark theme', () => {
+    const params = ref<BloodPressureChartParams>({
+      start: null,
+      end: null,
+      systolic_top: 135,
+      diastolic_top: 85,
+      show_systolic: true,
+      show_diastolic: true,
+      show_pulse: true,
+      theme: 'dark',
+    })
+    createTestWrapper(() => useBloodPressureChart(params))
+    expect((mockApi.mock.lastCall![1]?.query as Record<string, unknown>).theme).toBe('dark')
   })
 
   it('includes date range when provided', () => {
@@ -69,6 +86,7 @@ describe('useBloodPressureChart', () => {
       show_systolic: true,
       show_diastolic: false,
       show_pulse: true,
+      theme: 'light',
     })
     createTestWrapper(() => useBloodPressureChart(params))
     const call = mockApi.mock.lastCall!
@@ -84,10 +102,10 @@ describe('useBloodGlucoseChart', () => {
   beforeEach(() => mockApi.mockResolvedValue(MOCK_SVG))
 
   it('fetches from /api/v1/blood-glucose/chart', () => {
-    const params = ref<SimpleChartParams>({ start: null, end: null })
+    const params = ref<SimpleChartParams>({ start: null, end: null, theme: 'light' })
     createTestWrapper(() => useBloodGlucoseChart(params))
     expect(mockApi).toHaveBeenCalledWith('/api/v1/blood-glucose/chart', {
-      query: {},
+      query: { theme: 'light' },
       responseType: 'text',
     })
   })
@@ -97,10 +115,10 @@ describe('useKetonesChart', () => {
   beforeEach(() => mockApi.mockResolvedValue(MOCK_SVG))
 
   it('fetches from /api/v1/ketones/chart', () => {
-    const params = ref<SimpleChartParams>({ start: null, end: null })
+    const params = ref<SimpleChartParams>({ start: null, end: null, theme: 'dark' })
     createTestWrapper(() => useKetonesChart(params))
     expect(mockApi).toHaveBeenCalledWith('/api/v1/ketones/chart', {
-      query: {},
+      query: { theme: 'dark' },
       responseType: 'text',
     })
   })

@@ -8,9 +8,19 @@ const authStore = useAuthStore()
 const { isOnline } = useOnlineStatus()
 
 const navItems = [
-  { title: 'Blood Pressure', to: '/blood-pressure', icon: 'mdi-heart-pulse' },
-  { title: 'Blood Glucose', to: '/blood-glucose', icon: 'mdi-water' },
-  { title: 'Ketones', to: '/ketones', icon: 'mdi-flask' },
+  {
+    title: 'Blood Pressure',
+    to: '/blood-pressure',
+    icon: 'mdi-heart-pulse',
+    chartTo: '/blood-pressure/chart',
+  },
+  {
+    title: 'Blood Glucose',
+    to: '/blood-glucose',
+    icon: 'mdi-water',
+    chartTo: '/blood-glucose/chart',
+  },
+  { title: 'Ketones', to: '/ketones', icon: 'mdi-flask', chartTo: '/ketones/chart' },
 ]
 </script>
 
@@ -18,13 +28,15 @@ const navItems = [
   <v-app>
     <v-navigation-drawer v-model="drawer">
       <v-list nav density="compact">
-        <v-list-item
-          v-for="item in navItems"
-          :key="item.to"
-          :to="item.to"
-          :prepend-icon="item.icon"
-          :title="item.title"
-        />
+        <template v-for="item in navItems" :key="item.to">
+          <v-list-item :to="item.to" :prepend-icon="item.icon" :title="item.title" />
+          <v-list-item
+            :to="item.chartTo"
+            prepend-icon="mdi-chart-line"
+            title="Chart"
+            class="ml-4"
+          />
+        </template>
       </v-list>
     </v-navigation-drawer>
 
