@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.0](https://github.com/max-pfeiffer/health-monitor-frontend/compare/health-monitor-frontend-0.1.0...health-monitor-frontend-0.2.0) (2026-06-28)
+
+
+### Features
+
+* Application is adjusting light or dark theme for charts ([37b5758](https://github.com/max-pfeiffer/health-monitor-frontend/commit/37b5758f656dee0ace3e78387b569257ee4a064f))
+* Charts are now displayed on separate pages ([1b236b9](https://github.com/max-pfeiffer/health-monitor-frontend/commit/1b236b9e6208edb3ad36b31f9abf132d813ab272))
+
 ## [0.1.0](https://github.com/max-pfeiffer/health-monitor-frontend/compare/health-monitor-frontend-0.0.1...health-monitor-frontend-0.1.0) (2026-06-13)
 
 
