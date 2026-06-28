@@ -2,6 +2,8 @@ import { type MaybeRefOrGetter, computed, toValue } from 'vue'
 import { keepPreviousData, useQuery } from '@tanstack/vue-query'
 import { api } from '@/lib/api'
 
+export type ChartTheme = 'light' | 'dark'
+
 export interface BloodPressureChartParams {
   start: string | null
   end: string | null
@@ -10,11 +12,13 @@ export interface BloodPressureChartParams {
   show_systolic: boolean
   show_diastolic: boolean
   show_pulse: boolean
+  theme: ChartTheme
 }
 
 export interface SimpleChartParams {
   start: string | null
   end: string | null
+  theme: ChartTheme
 }
 
 function toIsoOrUndefined(dateStr: string | null): string | undefined {
@@ -31,6 +35,7 @@ function buildBloodPressureQuery(
     show_systolic: p.show_systolic,
     show_diastolic: p.show_diastolic,
     show_pulse: p.show_pulse,
+    theme: p.theme,
   }
   const start = toIsoOrUndefined(p.start)
   const end = toIsoOrUndefined(p.end)
@@ -40,7 +45,7 @@ function buildBloodPressureQuery(
 }
 
 function buildSimpleQuery(p: SimpleChartParams): Record<string, string> {
-  const query: Record<string, string> = {}
+  const query: Record<string, string> = { theme: p.theme }
   const start = toIsoOrUndefined(p.start)
   const end = toIsoOrUndefined(p.end)
   if (start) query.start = start

@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { useTheme } from 'vuetify'
 import { useBloodPressureChart } from '@/composables/useCharts'
-import type { BloodPressureChartParams } from '@/composables/useCharts'
+import type { BloodPressureChartParams, ChartTheme } from '@/composables/useCharts'
 
-const chartParams = ref<BloodPressureChartParams>({
+const theme = useTheme()
+
+const chartParams = ref<Omit<BloodPressureChartParams, 'theme'>>({
   start: null,
   end: null,
   systolic_top: 135,
@@ -17,7 +20,9 @@ const {
   data: chartSvg,
   isLoading: chartLoading,
   isError: chartError,
-} = useBloodPressureChart(chartParams)
+} = useBloodPressureChart(
+  computed(() => ({ ...chartParams.value, theme: theme.global.name.value as ChartTheme })),
+)
 </script>
 
 <template>

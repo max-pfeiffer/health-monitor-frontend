@@ -1,14 +1,19 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { useTheme } from 'vuetify'
 import { useBloodGlucoseChart } from '@/composables/useCharts'
-import type { SimpleChartParams } from '@/composables/useCharts'
+import type { ChartTheme, SimpleChartParams } from '@/composables/useCharts'
 
-const chartParams = ref<SimpleChartParams>({ start: null, end: null })
+const theme = useTheme()
+
+const chartParams = ref<Omit<SimpleChartParams, 'theme'>>({ start: null, end: null })
 const {
   data: chartSvg,
   isLoading: chartLoading,
   isError: chartError,
-} = useBloodGlucoseChart(chartParams)
+} = useBloodGlucoseChart(
+  computed(() => ({ ...chartParams.value, theme: theme.global.name.value as ChartTheme })),
+)
 </script>
 
 <template>
