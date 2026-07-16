@@ -28,10 +28,6 @@ jobs:
           podman build \
             --platform linux/amd64,linux/arm64 \
             --manifest health-monitor-frontend:ci \
-            --build-arg VITE_API_BASE_URL=http://localhost:8000 \
-            --build-arg VITE_KEYCLOAK_URL=http://localhost:8080 \
-            --build-arg VITE_KEYCLOAK_REALM=health-monitor \
-            --build-arg VITE_KEYCLOAK_CLIENT_ID=health-monitor-frontend \
             -f Containerfile \
             .
 
@@ -50,17 +46,29 @@ jobs:
           for arch in amd64 arm64; do
             echo "=== smoke-testing linux/$arch ==="
             podman run -d --rm --name "hmf-$arch" --arch "$arch" \
-              -p 8081:80 health-monitor-frontend:ci
+              -p 8081:8080 \
+              -e VITE_API_BASE_URL=http://localhost:8000 \
+              -e VITE_KEYCLOAK_URL=http://localhost:8080 \
+              health-monitor-frontend:ci
             ready=
             for i in $(seq 1 30); do
-              if curl -fsS http://localhost:8081/ > /tmp/index.html; then
+              if curl -fsS http://localhost:8081/healthz > /dev/null; then
                 ready=1
                 break
               fi
               sleep 1
             done
+            if [ -z "$ready" ]; then
+              echo "container for $arch did not become ready"
+              podman logs "hmf-$arch" || true
+              podman stop "hmf-$arch" || true
+              exit 1
+            fi
+            curl -fsS http://localhost:8081/ > /tmp/index.html
+            curl -fsS http://localhost:8081/config.json > /tmp/config.json
             podman stop "hmf-$arch"
-            [ -n "$ready" ] || { echo "container for $arch did not become ready"; exit 1; }
             grep -qi 'health' /tmp/index.html \
               || { echo "index.html did not contain expected content"; cat /tmp/index.html; exit 1; }
+            grep -q '"apiBaseUrl": "http://localhost:8000"' /tmp/config.json \
+              || { echo "config.json was not rendered from runtime env vars"; cat /tmp/config.json; exit 1; }
           done

@@ -97,6 +97,7 @@ No Kubernetes manifest are included in this project.
 
 - Keycloak auth redirects and token endpoints (NetworkOnly)
 - Any `POST`/`PUT`/`DELETE` requests (mutations are never cached)
+- `/config.json` (runtime config — fetched with `cache: 'no-store'`, excluded from the precache glob, served with `Cache-Control: no-store` by nginx)
 
 ## Backend API
 
@@ -129,7 +130,19 @@ No Kubernetes manifest are included in this project.
 - Use multiple stages in the Containerfile to optimize image size
 - The image is published on DockerHub: https://hub.docker.com/
 - Image architectures: linux/amd64, linux/arm64
+- Base image: `nginxinc/nginx-unprivileged:alpine` — runs as user `nginx` (uid 101), listens on port 8080 (Kubernetes restricted Pod Security compatible)
 - nginx: add try_files $uri $uri/ /index.html for Vue Router to work in history mode
+- nginx: `/healthz` endpoint (200 "ok", access log off) for Kubernetes liveness/readiness probes
+- nginx cache headers: `/assets/` immutable (1y), everything else `no-cache`, `/config.json` `no-store`
+
+### Runtime Configuration
+
+- The image is runtime-configurable — no URLs are baked in at build time
+- `40-runtime-config.sh` (run via `/docker-entrypoint.d/` on container start) renders `config.json.template` into `/usr/share/nginx/html/config.json` with `envsubst` from the `VITE_*` environment variables
+- The container fails fast at startup if `VITE_API_BASE_URL` or `VITE_KEYCLOAK_URL` is unset; `VITE_KEYCLOAK_REALM` and `VITE_KEYCLOAK_CLIENT_ID` have defaults
+- `src/lib/config.ts` loads the config: fetches `/config.json` (with `cache: 'no-store'`) in production, falls back to `import.meta.env` in dev mode (Vite dev server, unit/e2e tests)
+- `main.ts` awaits `loadConfig()` before Keycloak init; `src/lib/api.ts` resolves `baseURL` per request via `getConfig()`
+- On Kubernetes, environment variables are set on the Deployment (e.g. via a Helm chart) — one published image serves all environments
 
 ### Tests
 
@@ -180,10 +193,12 @@ Coverage:
 
 ## Environment Variables
 
-- VITE_API_BASE_URL — base URL of the health-monitor-backend REST API
-- VITE_KEYCLOAK_URL — Keycloak server URL
-- VITE_KEYCLOAK_REALM — Keycloak realm name
-- VITE_KEYCLOAK_CLIENT_ID — Keycloak client ID
+- VITE_API_BASE_URL — base URL of the health-monitor-backend REST API (required in container)
+- VITE_KEYCLOAK_URL — Keycloak server URL (required in container)
+- VITE_KEYCLOAK_REALM — Keycloak realm name (container default: health-monitor)
+- VITE_KEYCLOAK_CLIENT_ID — Keycloak client ID (container default: health-monitor-frontend)
+
+Dev server reads them from `.env` (build-time inlining by Vite); the production container reads them at runtime on container start (see Runtime Configuration).
 
 ## Development Conventions
 

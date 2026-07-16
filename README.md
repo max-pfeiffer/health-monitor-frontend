@@ -31,12 +31,16 @@ cp .env.example .env
 
 Required environment variables (see `.env.example`):
 
-| Variable                  | Description                                     |
-| ------------------------- | ----------------------------------------------- |
-| `VITE_API_BASE_URL`       | Base URL of the health-monitor-backend REST API |
-| `VITE_KEYCLOAK_URL`       | Keycloak server URL                             |
-| `VITE_KEYCLOAK_REALM`     | Keycloak realm name                             |
-| `VITE_KEYCLOAK_CLIENT_ID` | Keycloak client ID                              |
+| Variable                  | Description                                     | Required in container          |
+| ------------------------- | ----------------------------------------------- | ------------------------------ |
+| `VITE_API_BASE_URL`       | Base URL of the health-monitor-backend REST API | yes                            |
+| `VITE_KEYCLOAK_URL`       | Keycloak server URL                             | yes                            |
+| `VITE_KEYCLOAK_REALM`     | Keycloak realm name                             | no (`health-monitor`)          |
+| `VITE_KEYCLOAK_CLIENT_ID` | Keycloak client ID                              | no (`health-monitor-frontend`) |
+
+For the dev server the values come from `.env`. The production container reads
+them at **runtime** (container start), so one published image works for any
+environment — see [Runtime configuration](#runtime-configuration).
 
 ## Development server
 
@@ -88,17 +92,60 @@ specification.
 Build and run the production container locally with Podman:
 
 ```bash
-# Build (multi-stage: Node build → nginx runtime)
-podman build -t health-monitor-frontend -f Containerfile \
-  --build-arg VITE_API_BASE_URL=http://localhost:8000 \
-  --build-arg VITE_KEYCLOAK_URL=http://localhost:8080 \
-  --build-arg VITE_KEYCLOAK_REALM=health-monitor \
-  --build-arg VITE_KEYCLOAK_CLIENT_ID=health-monitor-frontend \
-  .
+# Build (multi-stage: Node build → unprivileged nginx runtime)
+podman build -t health-monitor-frontend -f Containerfile .
 
-# Run — nginx serves the SPA on port 80
-podman run --rm -p 8081:80 health-monitor-frontend
+# Run — nginx serves the SPA on port 8080 (non-root), config comes from env vars
+podman run --rm -p 8081:8080 \
+  -e VITE_API_BASE_URL=http://localhost:8000 \
+  -e VITE_KEYCLOAK_URL=http://localhost:8080 \
+  health-monitor-frontend
 ```
+
+### Runtime configuration
+
+The image is **runtime-configurable**: no URLs are baked in at build time.
+On every container start, an entrypoint script (`40-runtime-config.sh`, run via
+the nginx image's `/docker-entrypoint.d` mechanism) renders
+`/usr/share/nginx/html/config.json` from the `VITE_*` environment variables,
+and the app fetches `/config.json` before initialising Keycloak. The container
+fails fast at startup if `VITE_API_BASE_URL` or `VITE_KEYCLOAK_URL` is missing.
+
+This means a Helm chart (or any Kubernetes manifest) configures the app with
+plain `env` values on the Deployment:
+
+```yaml
+containers:
+  - name: health-monitor-frontend
+    image: pfeiffermax/health-monitor-frontend:latest
+    ports:
+      - containerPort: 8080
+    env:
+      - name: VITE_API_BASE_URL
+        value: https://api.example.com
+      - name: VITE_KEYCLOAK_URL
+        value: https://auth.example.com
+    livenessProbe:
+      httpGet: { path: /healthz, port: 8080 }
+    readinessProbe:
+      httpGet: { path: /healthz, port: 8080 }
+```
+
+Kubernetes notes:
+
+- The image is based on `nginxinc/nginx-unprivileged` — it runs as user
+  `nginx` (uid 101) and listens on **8080**, so it works under the restricted
+  Pod Security Standard (`runAsNonRoot`).
+- nginx serves a probe endpoint at **`/healthz`** (returns `200 ok`, access
+  log disabled).
+- `config.json` is served with `Cache-Control: no-store` and is excluded from
+  the service-worker precache, so configuration changes take effect on the
+  next page load without cache-busting.
+- `readOnlyRootFilesystem: true` is not supported out of the box: the
+  entrypoint writes `/usr/share/nginx/html/config.json` at startup (and nginx
+  needs writable cache/pid paths). If you need a read-only root filesystem,
+  adapt the image to render `config.json` into a writable `emptyDir` mount
+  exposed via an nginx `alias`.
 
 ### Multi-architecture build
 
@@ -115,15 +162,14 @@ podman build \
   --platform linux/amd64,linux/arm64 \
   --manifest health-monitor-frontend:local \
   -f Containerfile \
-  --build-arg VITE_API_BASE_URL=http://localhost:8000 \
-  --build-arg VITE_KEYCLOAK_URL=http://localhost:8080 \
-  --build-arg VITE_KEYCLOAK_REALM=health-monitor \
-  --build-arg VITE_KEYCLOAK_CLIENT_ID=health-monitor-frontend \
   .
 
 # Inspect the manifest / run a specific architecture
 podman manifest inspect health-monitor-frontend:local
-podman run --rm --arch arm64 -p 8081:80 health-monitor-frontend:local
+podman run --rm --arch arm64 -p 8081:8080 \
+  -e VITE_API_BASE_URL=http://localhost:8000 \
+  -e VITE_KEYCLOAK_URL=http://localhost:8080 \
+  health-monitor-frontend:local
 ```
 
 The Release workflow builds the same manifest list and pushes it to Docker Hub,
@@ -131,9 +177,9 @@ so a single image tag serves both architectures. The published image is
 available on Docker Hub:
 [`pfeiffermax/health-monitor-frontend`](https://hub.docker.com/r/pfeiffermax/health-monitor-frontend).
 
-> Note: environment variables are inlined at **build time** by Vite. Pass them
-> via `--build-arg` to `podman build`, or use the compose setup below which
-> wires the build args automatically.
+> Note: environment variables are read at **runtime** (container start), not
+> at build time — the same image works for any environment. See
+> [Runtime configuration](#runtime-configuration).
 
 ## Local manual testing (full stack)
 
