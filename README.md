@@ -100,7 +100,35 @@ podman build -t health-monitor-frontend -f Containerfile \
 podman run --rm -p 8081:80 health-monitor-frontend
 ```
 
-The published image is available on Docker Hub:
+### Multi-architecture build
+
+The published image supports `linux/amd64` and `linux/arm64`. Podman builds
+both architectures into a single manifest list. Building the non-native
+architecture requires QEMU binfmt emulation, registered once per host:
+
+```bash
+# Register QEMU handlers (host-wide, persists until reboot)
+podman run --rm --privileged docker.io/tonistiigi/binfmt --install arm64
+
+# Build both architectures into one manifest list
+podman build \
+  --platform linux/amd64,linux/arm64 \
+  --manifest health-monitor-frontend:local \
+  -f Containerfile \
+  --build-arg VITE_API_BASE_URL=http://localhost:8000 \
+  --build-arg VITE_KEYCLOAK_URL=http://localhost:8080 \
+  --build-arg VITE_KEYCLOAK_REALM=health-monitor \
+  --build-arg VITE_KEYCLOAK_CLIENT_ID=health-monitor-frontend \
+  .
+
+# Inspect the manifest / run a specific architecture
+podman manifest inspect health-monitor-frontend:local
+podman run --rm --arch arm64 -p 8081:80 health-monitor-frontend:local
+```
+
+The Release workflow builds the same manifest list and pushes it to Docker Hub,
+so a single image tag serves both architectures. The published image is
+available on Docker Hub:
 [`pfeiffermax/health-monitor-frontend`](https://hub.docker.com/r/pfeiffermax/health-monitor-frontend).
 
 > Note: environment variables are inlined at **build time** by Vite. Pass them
