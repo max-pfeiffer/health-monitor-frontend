@@ -1,15 +1,6 @@
 FROM node:24-alpine AS build
 WORKDIR /app
 
-ARG VITE_API_BASE_URL
-ARG VITE_KEYCLOAK_URL
-ARG VITE_KEYCLOAK_REALM=health-monitor
-ARG VITE_KEYCLOAK_CLIENT_ID=health-monitor-frontend
-ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
-ENV VITE_KEYCLOAK_URL=${VITE_KEYCLOAK_URL}
-ENV VITE_KEYCLOAK_REALM=${VITE_KEYCLOAK_REALM}
-ENV VITE_KEYCLOAK_CLIENT_ID=${VITE_KEYCLOAK_CLIENT_ID}
-
 # Activate corepack — uses packageManager field in package.json for pnpm version
 RUN corepack enable
 
@@ -21,8 +12,22 @@ RUN HUSKY=0 pnpm install --frozen-lockfile
 COPY . .
 RUN pnpm run build
 
-FROM nginx:alpine AS production
+# Unprivileged nginx: runs as user nginx (uid 101) and listens on 8080,
+# compatible with restricted Kubernetes Pod Security Standards
+FROM docker.io/nginxinc/nginx-unprivileged:alpine AS production
 COPY --from=build /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-EXPOSE 80
+
+# Runtime config: 40-runtime-config.sh renders /config.json from container
+# environment variables on every start via the image's /docker-entrypoint.d
+# mechanism. Only config.json is writable by the nginx user — the rest of the
+# document root stays read-only.
+COPY config.json.template /etc/health-monitor/config.json.template
+COPY --chmod=755 40-runtime-config.sh /docker-entrypoint.d/40-runtime-config.sh
+USER root
+RUN touch /usr/share/nginx/html/config.json \
+    && chown nginx:nginx /usr/share/nginx/html/config.json
+USER nginx
+
+EXPOSE 8080
 CMD ["nginx", "-g", "daemon off;"]

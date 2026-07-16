@@ -64,13 +64,13 @@ services:
     build:
       context: .
       dockerfile: Containerfile
-      args:
-        VITE_API_BASE_URL: http://localhost:8000
-        VITE_KEYCLOAK_URL: http://localhost:8080
-        VITE_KEYCLOAK_REALM: health-monitor
-        VITE_KEYCLOAK_CLIENT_ID: health-monitor-frontend
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000
+      VITE_KEYCLOAK_URL: http://localhost:8080
+      VITE_KEYCLOAK_REALM: health-monitor
+      VITE_KEYCLOAK_CLIENT_ID: health-monitor-frontend
     ports:
-      - "8081:80"
+      - "8081:8080"
     depends_on:
       health-monitor-backend:
         condition: service_started
